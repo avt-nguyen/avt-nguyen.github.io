@@ -38,21 +38,14 @@ If you don't use JSHint (or are using it with a configuration file), you can saf
 
 "use strict"; // Do NOT remove this directive!
 
-/*
-white = 16777215
-red = 16711680
-orange = 1674448
-yellow = 16776960
-green = 65280
-blue = 255
-purple = 9195519
-pink = 16758255
-*/
-var currentColor = 16777215
-var currentX = 0;
-var currentY = 0;
+// stores a color selected from the palette
+// default value on start is white
+var CURRENTCOLOR = PS.DEFAULT;
 
-var draw = 0;
+// 0 = do not draw
+// 1 = draw
+// allows for continual drawing when left mouse button is held while cursor moves around canvas
+var DRAW = 0;
 
 /*
 PS.init( system, options )
@@ -80,7 +73,7 @@ PS.init = function( system, options ) {
 	// Uncomment the following code line and change
 	// the x and y parameters as needed.
 
-	PS.gridSize( 10, 11 );
+	PS.gridSize( 12, 14 );
 
 	// This is also a good place to display
 	// your game title or a welcome message
@@ -88,18 +81,40 @@ PS.init = function( system, options ) {
 	// Uncomment the following code line and
 	// change the string parameter as needed.
 
-	PS.statusText( "Draw" );
+	PS.statusText("Draw");
 	
 	// Add any other initialization code you need here.
-	PS.color ( 0, 10, PS.COLOR_RED );
-	PS.color ( 1, 10, PS.COLOR_ORANGE );
-	PS.color ( 2, 10, PS.COLOR_YELLOW );
-	PS.color ( 3, 10, PS.COLOR_GREEN );
-	PS.color ( 4, 10, PS.COLOR_BLUE );
-	PS.color ( 5, 10, 0x8C4FFF );
-	PS.color ( 6, 10, 0xFFB5EF );
-	PS.color ( 8, 10, PS.COLOR_BLACK );
-	PS.glyph ( 9, 10, "x");
+
+	// first row of colors
+	PS.color(0, 12, PS.COLOR_RED);
+	PS.color(1, 12, PS.COLOR_ORANGE);
+	PS.color(2, 12, PS.COLOR_YELLOW);
+	PS.color(3, 12, 0x239630); // dark green
+	PS.color(4, 12, 0x457DD6); // blue
+	PS.color(5, 12, 0x6123C9); // purple
+	PS.color(6, 12, 0xE8389A); // pink
+	PS.color(8, 12, 0xD3D3D3); // light grey
+	PS.color(9, 12, PS.COLOR_GRAY);
+	PS.color(10, 12, 0x444444); // dark grey
+	PS.color(11, 12, PS.COLOR_BLACK);
+
+	// second row of colors
+	PS.color(0, 13, 0xFF8E80); // light red
+	PS.color(1, 13, 0xFFC07D); // light orange
+	PS.color(2, 13, 0xFFEC82); // light yellow
+	PS.color(3, 13, 0x84D87C); // light green
+	PS.color(4, 13, 0xA6D2FF); // light blue
+	PS.color(5, 13, 0xB4ABED); // light purple
+	PS.color(6, 13, 0xFFB5EF); // light pink
+	PS.color(7, 13, 0xFFDECC); // peach
+	PS.color(8, 13, 0xD8A791); // light brown
+	PS.color(9, 13, 0xBC8462); // medium brown
+	PS.color(10, 13, 0x593E2E); // brown
+
+	// clear canvas button
+	PS.borderColor(11, 13, PS.COLOR_RED);
+	PS.border(11, 13, 3)
+	PS.glyph(11, 13, 128465);
 
 };
 
@@ -122,23 +137,33 @@ PS.touch = function( x, y, data, options ) {
 	// Add code here for mouse clicks/touches
 	// over a bead.
 
-	draw = 1;
-	if (y == 10) {
-		currentColor = PS.color(x, y);
-		//clear entire canvas
-		if (x == 9) {
-			for (let clearX = 0; clearX < 10; clearX++){
-				for (let clearY = 0; clearY < 10; clearY++){
-					PS.color(clearX, clearY, 16777215);
+	// turn on ability to draw 
+	DRAW = 1;
+
+	// if bead clicked is part of the palette
+	if (y >= 12)
+	{
+		CURRENTCOLOR = PS.color(x, y); // set color to palette color
+		
+		// if bead clicked is clear canvas button
+		if (x == 11 && y == 13)
+		{
+			PS.audioPlay("fx_rip");
+			for (let clearX = 0; clearX < 12; clearX++) // clear entire canvas
+			{
+				for (let clearY = 0; clearY < 12; clearY++)
+				{
+					PS.color(clearX, clearY, PS.DEFAULT);
 				}
 			}
 		}
+		PS.audioPlay("fx_click");
 	}
 	else {
-		PS.color( x, y, currentColor )
+		PS.color(x, y, CURRENTCOLOR); // if bead is not part of the palette, draw with whatever the current color is
 	}
 	 
-	//PS.debug( "PS.color() " + currentColor + "\n");
+	// PS.debug( "PS.color() " + CURRENTCOLOR + "\n");
 };
 
 /*
@@ -157,7 +182,9 @@ PS.release = function( x, y, data, options ) {
 	//PS.debug( "PS.release() @ " + x + ", " + y + "\n" );
 
 	// Add code here for when the mouse button/touch is released over a bead.
-	draw = 0;
+
+	// turn off drawing when left mouse is released
+	DRAW = 0;
 };
 
 /*
@@ -178,9 +205,10 @@ PS.enter = function( x, y, data, options ) {
 	// Add code here for when the mouse cursor/touch enters a bead.
 	//select color
 	
-	//draw
-	if (draw == 1 && y != 10) {
-		PS.color( x, y, currentColor )
+	//if draw is on and the bead is not part of the palette, draw
+	if (DRAW == 1 && y < 12)
+	{
+		PS.color(x, y, CURRENTCOLOR);
 	}
 };
 
