@@ -66,7 +66,7 @@ PS.init = function( system, options ) {
 
 	PS.gridSize(8, 8);
 	PS.imageLoad("testFish.jpg", myLoader);
-	PS.spriteImage ("testFish.jpg");
+	PS.spriteImage (PS.imageLoad("testFish.jpg", myLoader););
 
 	// This is also a good place to display
 	// your game title or a welcome message
