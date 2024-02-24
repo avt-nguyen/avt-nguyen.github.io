@@ -343,11 +343,11 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 
 	if (CURRENTROOM == 2)
 	{
-		if (mouseLoc.x == 4 && mouseLoc.y == 9)
+		if (mouseLoc.x == 3 && mouseLoc.y == 9)
 		{
 			CURRENTROOM = 0;
 			PS.loadRoom(CURRENTROOM);
-			PS.spriteMove(MOUSE, 4, 1);
+			PS.spriteMove(MOUSE, 3, 1);
 			PS.audioPlay("fx_click");
 		}
 	}
@@ -437,8 +437,11 @@ PS.loadRoom = function(room)
 		// door (leads to 1)
 		PS.setLevelDoor(9, 1, PS.COLOR_WHITE);
 
+		// door (leads to 2)
+		PS.setLevelDoor(3, 0, PS.COLOR_WHITE);
 
-		// blue door (leads to )
+
+		// blue door (leads to 3)
 		PS.setLevelDoor(0, 1, PS.COLOR_BLUE);
 		if (BLUEENTERED == 1)
 		{
@@ -512,7 +515,7 @@ PS.loadRoom = function(room)
 		PS.statusText( "" );
 		PS.spriteMove(MOUSE, 4, 8);
 		// door (leads to 0)
-		PS.setLevelDoor(4, 9, PS.COLOR_WHITE);
+		PS.setLevelDoor(3, 9, PS.COLOR_WHITE);
 
 		PS.setLevelBead(6, 3, PS.COLOR_ORANGE);
 	}

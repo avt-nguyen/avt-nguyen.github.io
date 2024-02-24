@@ -40,16 +40,26 @@ If you don't use JSHint (or are using it with a configuration file), you can saf
 
 // 0 = hub
 // 1 = blue key room
-// 2 = orange key room
+// 2 = orange key room (not in this version)
 // 3 = red key room
 // 4 = maze key check
-// 5 = 
 var CURRENTROOM = 0;
 var MOUSE = PS.spriteSolid (PS.DEFAULT, PS.DEFAULT);
 var GREENKEY = 0;
 var BLUEKEY = 0;
+var ORANGEKEY = 0;
 var BLUEENTERED = 0;
+var BLUEMAZEENTERED = 0;
+var REDMAZEENTERED = 0;
+var ORANGEMAZEENTERED = 0;
 var REDKEY = 0;
+var TILESTEP = new Array(PS.COLOR_RED, PS.COLOR_ORANGE, PS.COLOR_YELLOW, PS.COLOR_GREEN, PS.COLOR_BLUE);
+// 2 9 4 0
+var PASSCODE = new Array(50, 57, 52, 48);
+var ROOM2SOLVED = 0; 
+var PASSCODEDISPLAY = 3;
+var ROOM3SOLVED = 0;
+var CHEESEEATEN = 0;
 
 /*
 PS.init( system, options )
@@ -62,21 +72,6 @@ Any value returned is ignored.
 */
 
 PS.init = function( system, options ) {
-	// Uncomment the following code line
-	// to verify operation:
-
-	// PS.debug( "PS.init() called\n" );
-
-	// This function should normally begin
-	// with a call to PS.gridSize( x, y )
-	// where x and y are the desired initial
-	// dimensions of the grid.
-	// Call PS.gridSize() FIRST to avoid problems!
-	// The sample call below sets the grid to the
-	// default dimensions (8 x 8).
-	// Uncomment the following code line and change
-	// the x and y parameters as needed.
-
 	PS.gridSize(10, 11);
 	for (let x = 0; x < 10; x++) 
 	{
@@ -95,18 +90,6 @@ PS.init = function( system, options ) {
 	{
 		PS.spriteMove(MOUSE, 5, 4);
 	}
-	
-	
-
-	// This is also a good place to display
-	// your game title or a welcome message
-	// in the status line above the grid.
-	// Uncomment the following code line and
-	// change the string parameter as needed.
-
-	// PS.statusText( "Game" );
-
-	// Add any other initialization code you need here.
 };
 
 /*
@@ -120,13 +103,26 @@ This function doesn't have to do anything. Any value returned is ignored.
 */
 
 PS.touch = function( x, y, data, options ) {
-	// Uncomment the following code line
-	// to inspect x/y parameters:
-
-	// PS.debug( "PS.touch() @ " + x + ", " + y + "\n" );
-
-	// Add code here for mouse clicks/touches
-	// over a bead.
+	if  (x == 9 && y == 10)
+	{
+		let mouseLocPrev = PS.spriteMove(MOUSE);
+		PS.loadRoom(CURRENTROOM);
+		PS.alpha(mouseLocPrev.x, mouseLocPrev.y, PS.ALPHA_OPAQUE);
+		if (CURRENTROOM == 1)
+		{
+			if (mouseLocPrev.x == 1 && mouseLocPrev.y == 1)
+			{
+				PS.color(1, 1, PS.COLOR_GRAY);
+			}
+		}
+		if (CURRENTROOM == 3)
+		{
+			PS.loadRoom(CURRENTROOM);
+			//PS.alpha(9, 1, PS.ALPHA_OPAQUE);
+			PS.color(8, 1, PS.COLOR_GRAY);
+		}
+		PS.audioPlay("fx_squink");
+	}
 };
 
 /*
@@ -140,12 +136,6 @@ This function doesn't have to do anything. Any value returned is ignored.
 */
 
 PS.keyDown = function( key, shift, ctrl, options ) {
-	// Uncomment the following code line to inspect first three parameters:
-
-	//PS.debug( "PS.keyDown(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
-
-	// Add code here for when a key is pressed.
-
 	let mouseLoc = PS.spriteMove(MOUSE);
 	let mouseLocPrev = PS.spriteMove(MOUSE);
 	
@@ -158,6 +148,11 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 	if (prevBlockColor == PS.COLOR_GRAY)
 	{
 		prevBlockColor = PS.COLOR_WHITE;
+	}
+
+	if (CURRENTROOM == 3 && ROOM3SOLVED == 1)
+	{
+		prevBlockColor = PS.borderColor(mouseLocPrev.x, mouseLocPrev.y);
 	}
 
 	// up
@@ -189,25 +184,34 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 		(mouseLoc.y >= 0 && mouseLoc.y <= 9))
 	{
 		if (PS.data(mouseLoc.x, mouseLoc.y) == 0 ||
-		PS.data(mouseLoc.x, mouseLoc.y) == 5 || PS.data(mouseLoc.x, mouseLoc.y) == 6)
+		PS.data(mouseLoc.x, mouseLoc.y) == 5 || PS.data(mouseLoc.x, mouseLoc.y) == 6 ||
+		PS.data(mouseLoc.x, mouseLoc.y) == 8 || PS.data(mouseLoc.x, mouseLoc.y) == 10)
 		{
 			PS.spriteMove(MOUSE, mouseLoc.x, mouseLoc.y);
-			if (CURRENTROOM != 1)
-			{
-				PS.color(mouseLocPrev.x, mouseLocPrev.y, prevBlockColor);
-			}
+			PS.color(mouseLocPrev.x, mouseLocPrev.y, prevBlockColor);
 			PS.alpha(mouseLocPrev.x, mouseLocPrev.y, PS.ALPHA_OPAQUE);
+
+			//ice breaking
 			if (CURRENTROOM == 1){
-				let iceStatus = PS.setIce(mouseLocPrev.x, mouseLocPrev.y);
-				PS.debug(iceStatus);
-				if ( PS.data(mouseLoc.x, mouseLoc.y) == 5 && iceStatus == 0)
+				if ( PS.data(mouseLoc.x, mouseLoc.y) == 5)
 				{
 					PS.setIce(mouseLocPrev.x, mouseLocPrev.y, 1);
 				}
-				if ( PS.data(mouseLoc.x, mouseLoc.y) == 6 && iceStatus == 1)
+				if ( PS.data(mouseLoc.x, mouseLoc.y) == 6)
 				{
-					PS.data(iceStatus);
 					PS.setLevelBead(mouseLocPrev.x, mouseLocPrev.y, 0x7699FF);
+				}
+			}
+
+			if (CURRENTROOM == 3)
+			{
+				if(mouseLoc.x >= 0 && mouseLoc.x < 10 &&
+					mouseLoc.y >= 0 && mouseLoc.y < 10 &&
+					PS.borderColor(mouseLoc.x, mouseLoc.y) == TILESTEP[0])
+				{
+					PS.color(mouseLoc.x, mouseLoc.y, TILESTEP[0]);
+					TILESTEP.shift();
+					PS.audioPlay("fx_bloop");
 				}
 			}
 		}
@@ -227,15 +231,18 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 		PS.spriteMove(MOUSE, mouseLoc.x, mouseLoc.y);
 		PS.collectKey(mouseLoc.x, mouseLoc.y, keyColor);
 		PS.color(mouseLocPrev.x, mouseLocPrev.y, prevBlockColor);
+		PS.audioPlay("fx_coin1");
 
 		if (CURRENTROOM == 1)
 		{
-			PS.setIce(8, 8, 1);
-			PS.alpha(8, 8, PS.ALPHA_OPAQUE);
+			PS.spriteMove(MOUSE, 8, 8);
+			PS.alpha(9, 8, PS.ALPHA_OPAQUE);
+			PS.setLevelBead(9, 8, 0x7699FF);
+			PS.setCodePaper(9, 8);
 		}
 	}
 
-	//unlock door
+	// unlock door
 	if (mouseLoc.x >= 0 && mouseLoc.x < 10 &&
 		mouseLoc.y >= 0 && mouseLoc.y < 10 &&
 		PS.data(mouseLoc.x, mouseLoc.y) == 2)
@@ -247,14 +254,112 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 			PS.spriteMove(MOUSE, mouseLoc.x, mouseLoc.y);
 			PS.color(mouseLoc.x, mouseLoc.y, doorColor);
         	PS.alpha(mouseLoc.x, mouseLoc.y, PS.ALPHA_OPAQUE);
+			PS.audioPlay("fx_click");
 		}
+	}
+
+	// stepping on padlock tile
+	if (mouseLoc.x >= 0 && mouseLoc.x < 10 &&
+		mouseLoc.y >= 0 && mouseLoc.y < 10 &&
+		PS.data(mouseLoc.x, mouseLoc.y) == 10)
+	{
+		let number = PS.stepPadlockTile(mouseLoc.x, mouseLoc.y);
+		//PS.debug(number + " ");
+		if (number < 10)
+		{
+			//PS.debug(PASSCODEDISPLAY + " ");
+			if (PASSCODEDISPLAY == 3)
+			{
+				PS.border(0, 6, 0);
+			}
+			if (PASSCODEDISPLAY < 7)
+			{
+				PS.glyph(0, PASSCODEDISPLAY, number + "");
+				PS.border(0, PASSCODEDISPLAY - 1, 0);
+				PS.border(0, PASSCODEDISPLAY, 3);
+				PS.borderColor(0, PASSCODEDISPLAY, PS.COLOR_BLUE);
+				PASSCODEDISPLAY++;
+				if (PASSCODEDISPLAY > 6)
+				{
+					PASSCODEDISPLAY = 3;
+				}
+				PS.border(0, PASSCODEDISPLAY - 1, 0);
+				PS.border(0, PASSCODEDISPLAY, 3);
+				PS.borderColor(0, PASSCODEDISPLAY, PS.COLOR_BLUE);
+				if (PASSCODEDISPLAY == 3)
+				{
+					PS.border(0, 6, 0);
+				}
+			}
+			PS.audioPlay("fx_bloop");
+		}
+		if (number == 10)
+		{
+			let display1 = Number(PS.glyph(0, 3));
+			let display2 = Number(PS.glyph(0, 4));
+			let display3 = Number(PS.glyph(0, 5));
+			let display4 = Number(PS.glyph(0, 6));
+			//PS.debug(display1 + ", " + display2 + ", " + display3 + ", " + display4);
+			//PS.debug(PASSCODE[0] + ", " + PASSCODE[1] + ", " + PASSCODE[2] + ", " + PASSCODE[3]);
+			if (display1 == PASSCODE[0] && display2 == PASSCODE[1] && display3 == PASSCODE[2] && display4 == PASSCODE[3] && ORANGEKEY == 0)
+			{
+				PS.setLevelKey(9, 8, PS.COLOR_ORANGE);
+				ROOM2SOLVED = 1;
+			}
+			if (ROOM2SOLVED == 1)
+			{
+				PS.audioPlay("fx_ding");
+			}
+			else
+			{
+				PS.audioPlay("fx_bloink");
+			}
+		}
+
+		if (number == 11)
+		{
+			for (let y = 3; y < 7; y++)
+			{
+				PS.border(0, y, 0);
+				PS.glyph(0, y, "0");
+			}
+			PS.border(0, 3, 3);
+			PASSCODEDISPLAY = 3;
+			PS.audioPlay("fx_chirp2");
+		}	
+		
+		//PASSCODE.shift();
+		
+	}
+
+	// read paper
+	if (mouseLoc.x >= 0 && mouseLoc.x < 10 &&
+		mouseLoc.y >= 0 && mouseLoc.y < 10 &&
+		PS.data(mouseLoc.x, mouseLoc.y) == 9)
+	{
+		let codeNumber = PS.checkCodePaper();
+		PS.statusText("This paper says '" + codeNumber + "'");
+	}
+
+	// eat cheese
+	if (mouseLoc.x >= 0 && mouseLoc.x < 10 &&
+		mouseLoc.y >= 0 && mouseLoc.y < 10 &&
+		PS.data(mouseLoc.x, mouseLoc.y) == 7)
+	{
+		PS.checkCheese(mouseLoc.x, mouseLoc.y);
+		CHEESEEATEN = 1;
+		PS.audioPlay("fx_tada");
 	}
 
 	if (CURRENTROOM == 0)
 	{
 		if (mouseLoc.x == 9 && mouseLoc.y == 5)
 		{
-			PS.statusText( "Hello mouse! Your cheese is, um, somewhere" );
+			PS.statusText("Hello rat! Cheese is somewhere in the lab.");
+			if (CHEESEEATEN == 1)
+			{
+				PS.statusText("Looks like you found the cheese. Good job!");
+			}	
 		}
 
 		// load room 1
@@ -262,13 +367,17 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 		{
 			CURRENTROOM = 1;
 			PS.loadRoom(CURRENTROOM);
+			PS.audioPlay("fx_click");
 		}
-		// load room 2
-		if (mouseLoc.x == 4 && mouseLoc.y == 0)
+
+		// load room 1
+		if (mouseLoc.x == 3 && mouseLoc.y == 0)
 		{
 			CURRENTROOM = 2;
 			PS.loadRoom(CURRENTROOM);
+			PS.audioPlay("fx_click");
 		}
+
 		// load room 3
 		if (mouseLoc.x == 0 && mouseLoc.y == 1)
 		{
@@ -276,6 +385,7 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 			{
 				CURRENTROOM = 3;
 				PS.loadRoom(CURRENTROOM);
+				PS.audioPlay("fx_click");
 			}
 		}
 		// load room 4
@@ -283,38 +393,52 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 		{
 			CURRENTROOM = 4;
 			PS.loadRoom(CURRENTROOM);
+			PS.audioPlay("fx_click");
 		}
 	}
 
 	if (CURRENTROOM == 1)
-	{
-		
-		
+	{	
 		if (mouseLoc.x == 0 && mouseLoc.y == 1)
 		{
 			CURRENTROOM = 0;
+			
+			PS.color(0, 1, PS.COLOR_BLUE);
 			PS.loadRoom(CURRENTROOM);
 			PS.spriteMove(MOUSE, 8, 1);
+			PS.audioPlay("fx_click");
 		}		
 	}
 
 	if (CURRENTROOM == 2)
 	{
-		if (mouseLoc.x == 4 && mouseLoc.y == 9)
+		if (mouseLoc.x == 3 && mouseLoc.y == 9)
 		{
 			CURRENTROOM = 0;
 			PS.loadRoom(CURRENTROOM);
-			PS.spriteMove(MOUSE, 4, 1);
+			PS.spriteMove(MOUSE, 3, 1);
+			PS.audioPlay("fx_click");
 		}
 	}
 
 	if (CURRENTROOM == 3)
 	{
+		if (PS.color(1, 1) == PS.COLOR_RED && PS.color(4, 3) == PS.COLOR_ORANGE && PS.color(7, 4) == PS.COLOR_YELLOW &&
+		PS.color(1, 5) == PS.COLOR_GREEN && PS.color(6, 7) == PS.COLOR_BLUE)
+		{
+			if (REDKEY == 0)
+			{
+				PS.setLevelKey(1, 8, PS.COLOR_RED);
+				ROOM3SOLVED = 1;
+			}
+		}
+
 		if (mouseLoc.x == 9 && mouseLoc.y == 1)
 		{
 			CURRENTROOM = 0;
 			PS.loadRoom(CURRENTROOM);
 			PS.spriteMove(MOUSE, 1, 1);
+			PS.audioPlay("fx_click");
 		}
 	}
 
@@ -325,49 +449,11 @@ PS.keyDown = function( key, shift, ctrl, options ) {
 			CURRENTROOM = 0;
 			PS.loadRoom(CURRENTROOM);
 			PS.spriteMove(MOUSE, 1, 8);
+			PS.audioPlay("fx_click");
 		}
 	}
-	
 };
 
-/*
-PS.keyUp ( key, shift, ctrl, options )
-Called when a key on the keyboard is released.
-This function doesn't have to do anything. Any value returned is ignored.
-[key : Number] = ASCII code of the released key, or one of the PS.KEY_* constants documented in the API.
-[shift : Boolean] = true if shift key is held down, else false.
-[ctrl : Boolean] = true if control key is held down, else false.
-[options : Object] = A JavaScript object with optional data properties; see API documentation for details.
-*/
-
-PS.keyUp = function( key, shift, ctrl, options ) {
-	// Uncomment the following code line to inspect first three parameters:
-
-	// PS.debug( "PS.keyUp(): key=" + key + ", shift=" + shift + ", ctrl=" + ctrl + "\n" );
-
-	// Add code here for when a key is released.
-};
-
-/*
-PS.input ( sensors, options )
-Called when a supported input device event (other than those above) is detected.
-This function doesn't have to do anything. Any value returned is ignored.
-[sensors : Object] = A JavaScript object with properties indicating sensor status; see API documentation for details.
-[options : Object] = A JavaScript object with optional data properties; see API documentation for details.
-NOTE: Currently, only mouse wheel events are reported, and only when the mouse cursor is positioned directly over the grid.
-*/
-
-PS.input = function( sensors, options ) {
-	// Uncomment the following code lines to inspect first parameter:
-
-//	 var device = sensors.wheel; // check for scroll wheel
-//
-//	 if ( device ) {
-//	   PS.debug( "PS.input(): " + device + "\n" );
-//	 }
-
-	// Add code here for when an input event is detected.
-};
 
 PS.loadRoom = function(room)
 {
@@ -376,12 +462,15 @@ PS.loadRoom = function(room)
 		for (let y = 0; y < 10; y++)
 		{
 			PS.border(x, y, 0);
-			PS.color(x, y, PS.DEFAULT);
+			PS.borderColor(x, y, PS.COLOR_WHITE);
+			PS.color(x, y, PS.COLOR_WHITE);
 			PS.alpha(x, y, PS.ALPHA_OPAQUE);
 			PS.data(x, y, 0);
 			PS.glyph(x, y, PS.DEFAULT);
 		}
 	}
+	PS.border(9, 10, PS.DEFAULT);
+	PS.glyph(9, 10, PS.DEFAULT);
 	if (room == 0)
 	{
 		PS.statusText( "" );
@@ -417,29 +506,36 @@ PS.loadRoom = function(room)
 		// door (leads to 1)
 		PS.setLevelDoor(9, 1, PS.COLOR_WHITE);
 
-		// door (leads to )
-		PS.setLevelDoor(4, 0, PS.COLOR_WHITE);
+		// door (leads to 2)
+		PS.setLevelDoor(3, 0, PS.COLOR_WHITE);
 
-		// blue door (leads to )
+		// blue door (leads to 3)
 		PS.setLevelDoor(0, 1, PS.COLOR_BLUE);
 		if (BLUEENTERED == 1)
 		{
+			//PS.debug("BLUE ENTERED = 1\n");
 			PS.color(0, 1, PS.COLOR_BLUE);
-			PS.alpha(0, 1, PS.ALPHA_OPAQUE);
 		}
 
 		// door (leads to 4)
 		PS.setLevelDoor(1, 9, PS.COLOR_WHITE);
 
 		// NPC
-		PS.setNPC(9, 5, PS.COLOR_YELLOW);
+		PS.setNPC(9, 5, PS.COLOR_WHITE, 128104);
+
+		// code paper hint
+		PS.setCodePaper(8, 8);
 	}
 
 	// room to get blue key
 	if (room == 1)
 	{
-		PS.statusText( "" );
+		PS.statusText( "Hm. The ice looks like it might break" );
 		PS.spriteMove(MOUSE, 1, 1);
+
+		//reset button
+		PS.addResetButton();
+
 		for (let x = 0; x < 10; x++) 
 		{
 			for (let y = 0; y < 10; y++)
@@ -482,23 +578,66 @@ PS.loadRoom = function(room)
 		{
 			PS.setLevelKey(9, 8, PS.COLOR_BLUE);
 		}
+		else
+		{
+			PS.setCodePaper(9, 8);
+		}
 	}
 
 	// room to get orange key
 	if (room == 2)
 	{
 		PS.statusText( "" );
-		PS.spriteMove(MOUSE, 4, 8);
-		// door (leads to 0)
-		PS.setLevelDoor(4, 9, PS.COLOR_WHITE);
+		PS.spriteMove(MOUSE, 3, 8);
+		PASSCODEDISPLAY = 3;
 
-		PS.setLevelBead(6, 3, PS.COLOR_ORANGE);
+		for (let y = 0; y < 10; y++)
+		{
+			PS.setLevelBead(0, y, PS.COLOR_BLACK);
+			if (y < 7 && y > 2)
+			{
+				PS.setLevelBead(0, y, PS.COLOR_GREEN);
+				PS.glyph(0, y, "0");
+			}
+		}
+		PS.border(0, 3, 3);
+		PS.borderColor(0, 3, PS.COLOR_BLACK);
+
+		PS.setPadlockTile(2, 1, 1);
+		PS.setPadlockTile(5, 1, 2);
+		PS.setPadlockTile(8, 1, 3);
+		PS.setPadlockTile(2, 3, 4);
+		PS.setPadlockTile(5, 3, 5);
+		PS.setPadlockTile(8, 3, 6);
+		PS.setPadlockTile(2, 5, 7);
+		PS.setPadlockTile(5, 5, 8);
+		PS.setPadlockTile(8, 5, 9);
+		PS.setPadlockTile(5, 7, 0);
+
+		PS.setPadlockTile(7, 7, 10);
+		PS.setPadlockTile(3, 7, 11);
+
+		// door (leads to 0)
+		PS.setLevelDoor(3, 9, PS.COLOR_WHITE);
+
+		PS.setCodePaper(1, 7, 0);
+		
+		if (ORANGEKEY == 0 && ROOM2SOLVED == 1)
+		{
+			PS.setLevelKey(9, 8, PS.COLOR_ORANGE);
+		}
 	}
 
 	// room to get red key
 	if (room == 3)
 	{
-		PS.statusText( "" );
+		PS.addResetButton();
+		
+		if (REDKEY == 0)
+		{
+			PS.statusText( "Rainbow tiles, maybe I should step on them?" );
+			TILESTEP = [PS.COLOR_RED, PS.COLOR_ORANGE, PS.COLOR_YELLOW, PS.COLOR_GREEN, PS.COLOR_BLUE];
+		}
 		for (let x = 0; x < 10; x++) 
 		PS.color(9, 1, PS.COLOR_BLUE);
 		PS.spriteMove(MOUSE, 8, 1);
@@ -506,19 +645,84 @@ PS.loadRoom = function(room)
 		PS.setLevelDoor(9, 1, PS.COLOR_BLUE);
 		BLUEENTERED = 1;
 
-		PS.setLevelKey(6, 3, PS.COLOR_RED);
+		PS.setColorTile(1, 1, PS.COLOR_RED);
+		PS.setColorTile(4, 3, PS.COLOR_ORANGE);
+		PS.setColorTile(7, 4, PS.COLOR_YELLOW);
+		PS.setColorTile(1, 5, PS.COLOR_GREEN);
+		PS.setColorTile(6, 7, PS.COLOR_BLUE);
+
+		PS.setCodePaper(9, 8);
+
+		if (ROOM3SOLVED == 1)
+		{
+			PS.color(1, 1, PS.COLOR_RED);
+			PS.color(4, 3, PS.COLOR_ORANGE);
+			PS.color(7, 4, PS.COLOR_YELLOW);
+			PS.color(1, 5, PS.COLOR_GREEN);
+			PS.color(6, 7, PS.COLOR_BLUE);
+		}
 	}
 
 	// key check maze
 	if (room == 4)
 	{
 		PS.statusText( "" );
-		PS.spriteMove(MOUSE, 1, 1);
+		PS.spriteMove(MOUSE, 0, 0);
 
 		// door (leads to 0)
 		PS.setLevelDoor(1, 0, PS.COLOR_WHITE);
 
-		PS.setLevelBead(6, 3, PS.COLOR_GREEN);
+		PS.setLevelBead(2, 0, PS.COLOR_BLACK);
+		PS.setLevelBead(1, 1, PS.COLOR_BLACK);
+		PS.setLevelBead(2, 1, PS.COLOR_BLACK);
+		PS.setLevelBead(4, 1, PS.COLOR_BLACK);
+		PS.setLevelBead(7, 1, PS.COLOR_BLACK);
+		PS.setLevelBead(8, 1, PS.COLOR_BLACK);
+		PS.setLevelBead(1, 2, PS.COLOR_BLACK);
+		PS.setLevelBead(5, 2, PS.COLOR_BLACK);
+		PS.setLevelBead(6, 2, PS.COLOR_BLACK);
+		PS.setLevelBead(7, 2, PS.COLOR_BLACK);
+		PS.setLevelBead(1, 3, PS.COLOR_BLACK);
+		PS.setLevelBead(2, 3, PS.COLOR_BLACK);
+		PS.setLevelBead(3, 3, PS.COLOR_BLACK);
+		PS.setLevelBead(5, 3, PS.COLOR_BLACK);
+		PS.setLevelBead(3, 4, PS.COLOR_BLACK);
+		PS.setLevelBead(5, 4, PS.COLOR_BLACK);
+		PS.setLevelBead(7, 4, PS.COLOR_BLACK);
+		PS.setLevelBead(8, 4, PS.COLOR_BLACK);
+		PS.setLevelBead(1, 5, PS.COLOR_BLACK);
+		PS.setLevelBead(2, 5, PS.COLOR_BLACK);
+		PS.setLevelBead(5, 5, PS.COLOR_BLACK);
+		PS.setLevelBead(7, 5, PS.COLOR_BLACK);
+		PS.setLevelBead(3, 6, PS.COLOR_BLACK);
+		PS.setLevelBead(6, 6, PS.COLOR_BLACK);
+		PS.setLevelBead(7, 6, PS.COLOR_BLACK);
+		PS.setLevelBead(9, 6, PS.COLOR_BLACK);
+		PS.setLevelBead(1, 7, PS.COLOR_BLACK);
+		PS.setLevelBead(2, 7, PS.COLOR_BLACK);
+		PS.setLevelBead(3, 7, PS.COLOR_BLACK);
+		PS.setLevelBead(6, 7, PS.COLOR_BLACK);
+		PS.setLevelBead(2, 8, PS.COLOR_BLACK);
+		PS.setLevelBead(5, 8, PS.COLOR_BLACK);
+		PS.setLevelBead(6, 8, PS.COLOR_BLACK);
+		PS.setLevelBead(6, 9, PS.COLOR_BLACK);
+
+		if (CHEESEEATEN == 0)
+		{
+			PS.setCheese(8,8);
+		}
+		
+		PS.setLevelDoor(0, 7, PS.COLOR_RED);
+		if (REDMAZEENTERED == 1)
+		{
+			PS.color(0, 7, PS.COLOR_RED);
+		}
+
+		PS.setLevelDoor(8, 6, PS.COLOR_ORANGE);
+		if (ORANGEMAZEENTERED == 1)
+		{
+			PS.color(8, 6, PS.COLOR_ORANGE);
+		}
 	}
 };
 
@@ -530,6 +734,11 @@ PS.loadRoom = function(room)
 // 4 = NPC
 // 5 = ice (standard)
 // 6 = ice (breaking)
+// 7 = cheese
+// 8 = color tile
+// 9 = code paper hint
+// 10 = padlock
+
 PS.setLevelBead = function(x, y, color)
 {
 	PS.color(x, y, color);
@@ -577,13 +786,120 @@ PS.setIce = function(x, y, frozen)
 	return frozen;
 };
 
-PS.setNPC = function(x, y, color)
+PS.setNPC = function(x, y, color, glyph)
 {
 	PS.color(x, y, color);
 	PS.data(x, y, 4);
-	PS.glyph(x, y, 9786);
+	PS.glyph(x, y, glyph);
 };
 
+PS.setCheese = function(x, y)
+{
+	PS.data(x, y, 7);
+	PS.glyph(x, y, 129472);
+};
+
+PS.setPadlockTile = function(x, y, number)
+{
+	if (number < 10)
+	{
+		let numberString = "" + number;
+		PS.borderColor(x, y, PS.COLOR_BLACK);
+		PS.glyph(x, y, numberString);
+	}
+	else if (number == 10)
+	{
+		PS.borderColor(x, x, PS.COLOR_GREEN);
+		PS.glyph(x, y, 10003);
+	}
+	else if (number == 11)
+	{
+		PS.borderColor(x, y, PS.COLOR_RED);
+		PS.glyph(x, y, "X");
+	}
+	PS.border(x, y, 3)
+	PS.data(x, y, 10);
+};
+
+PS.stepPadlockTile = function(x, y)
+{
+	if (x == 2 && y == 1)
+	{
+		return 1;
+	}
+	if (x == 5 && y == 1)
+	{
+			return 2;
+	}
+	if (x == 8 && y == 1)
+	{
+		return 3;
+	}
+	if (x == 2 && y == 3)
+	{
+		return 4;
+	}
+	if (x == 5 && y == 3)
+	{
+		return 5;
+	}
+	if (x == 8 && y == 3)
+	{
+		return 6;
+	}
+	if (x == 2 && y == 5)
+	{
+		return 7;
+	}
+	if (x == 5 && y == 5)
+	{
+		return 8;
+	}
+	if (x == 8 && y == 5)
+	{
+		return 9;
+	}
+	if (x == 5 && y == 7)
+	{
+		return 0;
+	}
+	if (x == 7 && y == 7)
+	{
+		return 10;
+	}
+	if (x == 3 && y == 7)
+	{
+		return 11;
+	}
+}
+
+PS.setCodePaper = function(x, y)
+{
+	PS.data(x, y, 9);
+	PS.glyph(x, y, 128220);
+};
+
+PS.checkCodePaper = function(x, y)
+{
+	if (CURRENTROOM == 0)
+	{
+		return "2 _ _ _";
+	}
+	if (CURRENTROOM == 1)
+	{
+		return "_ _ 4 _";
+	}
+	if (CURRENTROOM == 2)
+	{
+		return "_ _ _ 0";
+	}
+	if (CURRENTROOM == 3)
+	{
+		return "_ 9 _ _";
+	}
+};
+
+// collect a key when a key is touched
 PS.collectKey = function(x, y, keyColor)
 {
 	if (keyColor == PS.COLOR_GREEN)
@@ -602,8 +918,28 @@ PS.collectKey = function(x, y, keyColor)
 		PS.data(x, y, 0);
 		BLUEKEY = 1;
 	}
+	if (keyColor == PS.COLOR_RED)
+	{
+		PS.color(2, 10, PS.COLOR_RED);
+		PS.glyph(2, 10, 128273);
+		PS.glyph(x, y, PS.DEFAULT);
+		PS.data(x, y, 0);
+		REDKEY = 1;
+	}
+	if (keyColor == PS.COLOR_ORANGE)
+	{
+		PS.color(3, 10, PS.COLOR_ORANGE);
+		PS.glyph(3, 10, 128273);
+		PS.glyph(x, y, PS.DEFAULT);
+		PS.data(x, y, 0);
+		ORANGEKEY = 1;
+	}
 };
 
+// checks if a door can be entered
+// return
+// 0: cannot unlock door
+// 1: can unlock door
 PS.unlockDoor = function(x, y, doorColor)
 {
 	if (doorColor == PS.COLOR_GREEN)
@@ -621,7 +957,53 @@ PS.unlockDoor = function(x, y, doorColor)
 	{
 		if (PS.color(1, 10) == PS.COLOR_BLUE)
 		{
-			BLUEENTERED = 1; 
+			if (CURRENTROOM == 3)
+			{
+				BLUEENTERED = 1; 
+			}
+			if (CURRENTROOM == 4)
+			{
+				if (doorColor == PS.COLOR_BLUE)
+				{
+					BLUEMAZEENTERED = 1;
+				}
+			}
+			return 1;
+		}
+		else
+		{
+			return 0; 
+		}
+	}
+	if (doorColor == PS.COLOR_RED)
+	{
+		if (PS.color(2, 10) == PS.COLOR_RED)
+		{
+			if (CURRENTROOM == 4)
+			{
+				if (doorColor == PS.COLOR_RED)
+				{
+					REDMAZEENTERED = 1;
+				}
+			}
+			return 1;
+		}
+		else
+		{
+			return 0; 
+		}
+	}
+	if (doorColor == PS.COLOR_ORANGE)
+	{
+		if (PS.color(3, 10) == PS.COLOR_ORANGE)
+		{
+			if (CURRENTROOM == 4)
+			{
+				if (doorColor == PS.COLOR_ORANGE)
+				{
+					ORANGEMAZEENTERED = 1;
+				}
+			}
 			return 1;
 		}
 		else
@@ -633,4 +1015,28 @@ PS.unlockDoor = function(x, y, doorColor)
 	{
 		return 1;
 	}
+};
+
+PS.checkCheese = function(x, y)
+{
+	if (PS.data(x, y) == 7)
+	{
+		PS.statusText( "Cheese! Delicious!" );
+		PS.glyph(x, y, PS.DEFAULT);
+		PS.data(x, y, 0);
+	}
+};
+
+PS.setColorTile = function(x, y, color)
+{
+	PS.border(x, y, 3);
+	PS.borderColor(x, y, color);
+	PS.data(x, y, 8);
+};
+
+PS.addResetButton = function()
+{
+	PS.border(9, 10, 5);
+	PS.borderColor(9, 10, PS.COLOR_BLUE);
+	PS.glyph(9, 10, 10227);
 };
